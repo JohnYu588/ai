@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dify工作流实战分享 — 菜谱AI打标全流程复盘</title>
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-light: #EEF2FF;
+      --secondary: #7C3AED;
+      --accent: #10B981;
+      --accent-light: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-light: #FFFBEB;
+      --bg: #F8FAFC;
+      --card: #FFFFFF;
+      --text: #1E293B;
+      --text-secondary: #64748B;
+      --border: #E2E8F0;
+      --code-bg: #1E293B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    /* Sidebar TOC */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 260px;
+      height: 100vh;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform 0.3s;
+    }
+
+    .sidebar-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 8px 12px;
+      margin: 2px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: 6px;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .sidebar nav a:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .sidebar nav a.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      border-left-color: var(--primary);
+    }
+
+    /* Mobile hamburger */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      font-size: 20px;
+      line-height: 40px;
+      text-align: center;
+    }
+
+    /* Main content */
+    .main {
+      margin-left: 260px;
+      max-width: 900px;
+      padding: 0 40px 80px;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 60px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+
+    .hero .subtitle {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .hero .meta {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .hero .meta a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .hero .meta a:hover {
+      text-decoration: underline;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 56px;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      padding-left: 16px;
+      border-left: 4px solid var(--primary);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    h3 {
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin: 32px 0 16px;
+    }
+
+    p {
+      margin-bottom: 16px;
+    }
+
+    ul,
+    ol {
+      margin: 12px 0 16px 24px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    /* Callout boxes */
+    .callout {
+      padding: 20px 24px;
+      border-radius: 10px;
+      margin: 24px 0;
+      position: relative;
+      padding-left: 56px;
+    }
+
+    .callout::before {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      font-size: 22px;
+    }
+
+    .callout-tip {
+      background: var(--accent-light);
+      border: 1px solid #A7F3D0;
+    }
+
+    .callout-tip::before {
+      content: "💡";
+    }
+
+    .callout-warning {
+      background: var(--warning-light);
+      border: 1px solid #FDE68A;
+    }
+
+    .callout-warning::before {
+      content: "⚠️";
+    }
+
+    .callout-insight {
+      background: var(--primary-light);
+      border: 1px solid #C7D2FE;
+    }
+
+    .callout-insight::before {
+      content: "🎯";
+    }
+
+    .callout>strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .callout p {
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      color: #E2E8F0;
+      padding: 20px 24px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 16px 0 24px;
+      font-size: 14px;
+      line-height: 1.7;
+      font-family: "SF Mono", "Fira Code", "JetBrains Mono", Menlo, monospace;
+    }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "JetBrains Mono", Menlo, monospace;
+      font-size: 14px;
+    }
+
+    p code,
+    li code {
+      background: #F1F5F9;
+      color: #7C3AED;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    /* JSON syntax colors */
+    .json-key {
+      color: #7DD3FC;
+    }
+
+    .json-str {
+      color: #86EFAC;
+    }
+
+    .json-num {
+      color: #FDE68A;
+    }
+
+    .json-punct {
+      color: #94A3B8;
+    }
+
+    /* Comparison */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 24px 0;
+    }
+
+    .comparison-card {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .comparison-card .label {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .comparison-card.before .label {
+      background: #EF4444;
+    }
+
+    .comparison-card.after .label {
+      background: var(--accent);
+    }
+
+    .comparison-card pre {
+      margin: 0;
+      border-radius: 0 0 10px 10px;
+      font-size: 13px;
+    }
+
+    /* Problem/Solution cards */
+    .problem-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin: 24px 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .problem-card .problem-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #EF4444;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .problem-card .solution-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 16px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin: 32px 0;
+    }
+
+    .flow-step {
+      flex: 1;
+      background: var(--card);
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .flow-step .step-num {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 32px;
+      margin-bottom: 10px;
+    }
+
+    .flow-step .step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .flow-step .step-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      color: var(--primary);
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    /* Mapping table */
+    .mapping-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 15px;
+    }
+
+    .mapping-table th {
+      background: var(--primary);
+      color: white;
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .mapping-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mapping-table tr:nth-child(even) td {
+      background: #F8FAFC;
+    }
+
+    .mapping-table .arrow-cell {
+      text-align: center;
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    /* Option cards */
+    .option-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 24px 0;
+    }
+
+    .option-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .option-card.recommended {
+      border-color: var(--primary);
+    }
+
+    .option-card .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .option-card.recommended .badge {
+      background: var(--primary);
+      color: white;
+    }
+
+    .option-card:not(.recommended) .badge {
+      background: #F1F5F9;
+      color: var(--text-secondary);
+    }
+
+    .option-card h4 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .option-card ul {
+      margin-left: 16px;
+      font-size: 14px;
+    }
+
+    /* Back to top */
+    .back-top {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 44px;
+      height: 44px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+
+    .back-top.visible {
+      opacity: 1;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      padding: 32px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .hamburger {
+        display: block;
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 0 20px 60px;
+      }
+
+      .hero {
+        padding-top: 72px;
+      }
+
+      .hero h1 {
+        font-size: 24px;
+      }
+
+      .comparison {
+        grid-template-columns: 1fr;
+      }
+
+      .flow {
+        flex-direction: column;
+      }
+
+      .flow-arrow {
+        justify-content: center;
+        transform: rotate(90deg);
+        padding: 8px 0;
+      }
+
+      .option-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+
+      .sidebar,
+      .hamburger,
+      .back-top {
+        display: none !important;
+      }
+
+      .main {
+        margin-left: 0;
+        max-width: 100%;
+      }
+    }
+
+    /* Image Lightbox */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, .75);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      cursor: default;
+      user-select: none;
+    }
+
+    .lightbox-overlay.active {
+      display: flex;
+    }
+
+    .lightbox-overlay img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+      object-fit: contain;
+      transition: transform .2s ease;
+      cursor: grab;
+    }
+
+    .lightbox-overlay img:active {
+      cursor: grabbing;
+    }
+
+    .lightbox-toolbar {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 10001;
+    }
+
+    .lightbox-toolbar button {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .15);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      transition: background .2s;
+    }
+
+    .lightbox-toolbar button:hover {
+      background: rgba(255, 255, 255, .3);
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .15);
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      transition: background .2s;
+      z-index: 10001;
+    }
+
+    .lightbox-nav:hover {
+      background: rgba(255, 255, 255, .3);
+    }
+
+    .lightbox-nav.prev {
+      left: 16px;
+    }
+
+    .lightbox-nav.next {
+      right: 16px;
+    }
+
+    .lightbox-counter {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, .7);
+      font-size: 14px;
+      z-index: 10001;
+    }
+
+    img.zoomable {
+      cursor: zoom-in;
+      transition: opacity .2s;
+    }
+
+    img.zoomable:hover {
+      opacity: .85;
+    }
+  </style>
+</head>
+
+<body>
+
+  <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+  <aside class="sidebar">
+    <div class="sidebar-title">目录导航</div>
+    <nav>
+      <a href="#sec-bg">背景与准备工作</a>
+      <a href="#sec-data">数据预处理</a>
+      <a href="#sec-prompt">提示词设计与迭代</a>
+      <a href="#sec-solution">方案概述</a>
+      <a href="#sec-problems">核心问题与解决方案汇总</a>
+      <a href="#sec-engineering">工程化实践</a>
+      <a href="#sec-batch">批量执行方案</a>
+      <a href="#sec-debug">调试与验证</a>
+      <a href="#sec-summary">总结</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>基于Dify工作流搭建AI菜谱打标</h1>
+      <!-- 今天跟大家分享一个最近在开发的基于dify工作流搭建的ai业务应用的这么一个需求，他的完整的开发流程，以及我在中间遇到的问题。希望能帮大家对整个开发流程有一个大致的了解。 -->
+      <p class="subtitle">AI 业务应用的开发全流程和经验沉淀</p>
+      <div class="meta">
+        <span>📅 2026年</span>
+        <a href="https://pupumall.feishu.cn/wiki/K8tywWYpJi2zeBkBkoLcCoCTnUL" target="_blank">📄 总结文档</a>
+      </div>
+    </div>
+
+    <!-- Section 1: 背景与准备工作 -->
+    <section id="sec-bg">
+      <h2>一、背景与准备工作</h2>
+
+      <h3>与传统开发的不同</h3>
+      <!-- 这类需求跟传统.. -->
+      <p>做 AI 应用开发跟传统开发有很大区别。没有产品经理给你画原型，你需要<strong>自己当产品、自己设计方案</strong>。虽然没有预设的截止时间，但也不能拖太久，需要自己把控节奏，多跟业务方沟通来建立信心。</p>
+      <h3>需求背景</h3>
+      <!-- 好，切入正题，这次开发的需求是ai菜谱打标的需求，算是一个比较入门的需求吧,这个需求是一个自由的命题，运营自己心里面并没有一个标准答案，也没有一个明确的要求要做成什么样的需要从哪些维度分析，需要我这边设计方案 -->
+      <p>当前菜谱标签主要依赖社区人工打标，存在<strong>标签维度不完整、标准不统一</strong>的问题，难以支撑后续多维度分析、精准归类和用户推送。</p>
+    </section>
+
+    <!-- Section 2: 数据预处理 -->
+    <section id="sec-data">
+      <h2>二、数据预处理 —— 为 Dify 入参铺垫</h2>
+      <!-- 然后服务端就是丢了这么两份sql报表出来。 -->
+      <img src="./images/excel-2.png" class="zoomable" style="width: 100%;" />
+      <img src="./images/excel-1.png" class="zoomable" style="width: 100%;" />
+      <ul>
+        <li><strong>菜谱基本信息表</strong>：包含菜谱标题、步骤描述、小贴士等</li>
+        <li><strong>食材表</strong>：通过菜谱 ID 关联的食材清单</li>
+      </ul>
+
+      <h3>步骤数据转换</h3>
+      <p>AI 的入参最好是自然语言。如果直接传 JSON 格式的数据，会增加模型的理解和解析成本。因此第一步是把结构化数据转成自然语言。</p>
+      <p>通过 Python 脚本批量将 JSON 格式的步骤数据转换为自然语言编号列表：</p>
+
+      <div class="comparison">
+        <div class="comparison-card before">
+          <div class="label">❌ 转换前（JSON 格式）</div>
+          <pre>[{
+  <span class="json-key">"step"</span>: <span class="json-num">1</span>,
+  <span class="json-key">"content"</span>: <span class="json-str">"把猪肋排洗净，切成小块。"</span>,
+  <span class="json-key">"image_url"</span>: <span class="json-str">"COOKING/2022/..."</span>
+}, {
+  <span class="json-key">"step"</span>: <span class="json-num">2</span>,
+  <span class="json-key">"content"</span>: <span class="json-str">"准备调料：蒜末、黑胡椒酱..."</span>,
+  <span class="json-key">"image_url"</span>: <span class="json-str">"COOKING/2022/..."</span>
+},
+  ...
+]</pre>
+        </div>
+        <div class="comparison-card after">
+          <div class="label">✅ 转换后（自然语言）</div>
+          <pre>1. 把猪肋排洗净，切成小块。
+2. 准备调料：蒜末、黑胡椒酱、
+   料酒、生抽、盐、蜂蜜，
+   搅拌均匀。
+3. 将调料与肋排搅拌均匀。
+   盖上保鲜膜，冰箱冷藏腌制
+   6小时。（冷藏一晚更入味）
+4. 烤箱200℃预热，铺上洋葱、
+   肋排，上下火200℃烤15分钟。
+5. 取出后刷蜂蜜，继续烤5分钟。
+6. 出炉撒芝麻即可。</pre>
+        </div>
+      </div>
+
+      <h3>表格合并</h3>
+      <p>食材表拷贝到菜谱的子表中，通过 Excel 的 <code>VLOOKUP</code> 关联函数将两份表格合并，只保留 Dify 调用所需的入参列。</p>
+      <img src="./images/excel3.png" class="zoomable" style="width: 100%;" />
+    </section>
+
+
+    <!-- Section 3: 提示词设计 -->
+    <section id="sec-prompt">
+      <h2>三、提示词设计与迭代</h2>
+      <p>准备好数据后，接下来就是写提示词和搭建 Dify 工作流。
+        <!-- 第一次做这个关于工作流的搭建也是摸着石头过河，我的第一直觉就是反复地google，ai。 -->
+        提示词可以尝试用多个模型生成，找到合理且符合要求的版本。我第一版最终采用的是 GPT-5.4 生成的结果，给它一些参考模板和需求描述后生成如下提示词：
+      </p>
+
+      <details
+        style="margin:20px 0;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <summary
+          style="padding:16px 20px;cursor:pointer;font-weight:600;font-size:15px;color:var(--primary);background:#F8FAFC;user-select:none;">
+          📋 点击展开：第一版完整提示词</summary>
+        <pre style="margin:0;border-radius:0 0 10px 10px;font-size:13px;white-space:pre-wrap;word-wrap:break-word;">
+# 朴朴超市菜谱内容打标助手提示词
+
+你是 **朴朴超市菜谱内容打标助手**。
+请根据用户提供的 **菜谱标题、食材介绍、步骤描述、小贴士等内容**，为菜谱提取并生成 **标准化标签（Tags）**，用于即时电商场景中的 **搜索、推荐、分类与用户浏览**。
+
+标签必须 **准确、简洁、可检索、符合电商用户习惯**。
+
+---
+
+# 打标标准（严格执行）
+
+## 1. 核心打标逻辑
+
+根据菜谱内容识别 **客观特征、食材特点、烹饪方式、饮食场景、人群适用性** 等信息，生成标签。
+
+标签需符合：
+
+- **真实客观**：必须能从内容中直接识别
+- **用户可搜索**：符合电商用户搜索习惯
+- **标签短语化**：2-6字优先
+
+示例：
+
+标题：番茄鸡蛋减脂汤
+
+标签：
+
+- 家常菜
+- 快手菜
+- 减脂期友好
+- 低油清爽
+- 番茄鸡蛋
+
+---
+
+# 2. 标签类型
+
+菜谱标签主要分为以下类别：
+
+---
+
+## （1）烹饪方式标签
+
+根据做法识别：
+
+示例：
+
+- 清蒸
+- 爆炒
+- 炖煮
+- 凉拌
+- 煎制
+- 烤箱料理
+- 空气炸锅
+- 一锅出
+
+---
+
+## （2）菜系 / 类型标签
+
+示例：
+
+- 家常菜
+- 下饭菜
+- 快手菜
+- 宴客菜
+- 汤类
+- 主食
+- 小吃
+- 甜品
+- 沙拉
+- 凉菜
+
+---
+
+## （3）食材标签
+
+识别核心食材（最多3个）
+
+示例：
+
+- 鸡胸肉
+- 虾仁
+- 牛肉
+- 番茄
+- 西兰花
+- 土豆
+- 三文鱼
+
+---
+
+## （4）饮食场景标签（重点）
+
+允许使用 **生活方式或饮食阶段描述**。
+
+示例：
+
+- 减脂期友好
+- 健身餐
+- 熬夜党友好
+- 解馋小食
+- 清爽低负担
+- 夏日清爽
+- 聚餐必备
+- 追剧零食
+
+注意：
+
+只能描述 **场景或人群**，
+不得产生 **功效暗示**。
+
+---
+
+## （5）人群标签
+
+示例：
+
+- 上班族快手餐
+- 宝宝辅食
+- 儿童友好
+- 新手友好
+- 懒人料理
+
+---
+
+## （6）口味标签
+
+示例：
+
+- 酸甜
+- 香辣
+- 麻辣
+- 清淡
+- 鲜香
+- 蒜香
+- 奶香
+
+---
+
+# 3. 标签数量规则
+
+每个菜谱输出 **5-10个标签**。
+
+优先顺序：
+
+1. 烹饪方式
+2. 菜品类型
+3. 核心食材
+4. 饮食场景
+5. 口味
+6. 人群
+
+避免：
+
+- 重复标签
+- 意义相同标签
+- 无法从内容判断的标签
+
+---
+
+# 4. 严禁生成标签
+
+以下类型 **禁止打标**：
+
+---
+
+## （1）医疗功效
+
+禁止：
+
+- 治感冒
+- 降血压
+- 抗癌
+- 排毒
+- 消炎
+- 治便秘
+
+---
+
+## （2）减肥功效
+
+禁止：
+
+- 燃脂
+- 刮油
+- 瘦身
+- 暴瘦
+
+允许：
+
+- 减脂期友好
+- 低卡轻负担
+- 健身餐
+
+---
+
+## （3）美容功效
+
+禁止：
+
+- 美白
+- 祛斑
+- 抗衰
+- 养颜神器
+
+---
+
+## （4）绝对化标签
+
+禁止：
+
+- 最强
+- 顶级
+- 万能
+- 神药
+
+---
+
+# 5. 电商场景适配
+
+即时电商允许 **生活化标签**：
+
+允许：
+
+- 解馋神器
+- 聚会必备
+- 下饭神器
+- 懒人料理
+- 快手晚餐
+
+前提：
+
+不得涉及 **医疗、减肥、美容功效**。
+
+---
+
+# 打标步骤
+
+1. **阅读菜谱完整内容**
+（标题、食材、步骤、小贴士）
+
+2. **识别关键信息**
+
+- 核心食材
+- 烹饪方式
+- 菜品类型
+- 场景
+- 口味
+- 适用人群
+
+3. **生成标签**
+
+- 5-10个
+- 2-6字
+- 避免重复
+
+4. **检查合规性**
+
+确保没有：
+
+- 医疗功效
+- 减肥功效
+- 美容功效
+- 夸大词
+
+---
+
+# 输出规则
+
+必须严格按照 JSON 格式返回。
+不得包含任何额外解释或说明。
+
+示例：
+
+```json
+{
+  "tags": [
+    "家常菜",
+    "快手菜",
+    "番茄鸡蛋",
+    "清淡口味",
+    "减脂期友好",
+    "新手友好"
+  ]
+}
+```
+</pre>
+      </details>
+
+      <h3>提示词核心设计</h3>
+      <ul>
+        <li><strong>角色定义</strong>：朴朴超市菜谱内容打标助手</li>
+        <li><strong>标签类型</strong>：烹饪方式、菜系/类型、食材（最多3个）、饮食场景、人群、口味</li>
+        <li><strong>输出规范</strong>：每个菜谱 5-10 个标签，每个标签 2-6 字，避免重复</li>
+        <li><strong>合规红线</strong>：严禁医疗功效、减肥功效、美容功效、绝对化用语</li>
+        <li><strong>输出格式</strong>：严格 JSON 格式</li>
+      </ul>
+      <div class="callout callout-warning">
+        <strong>关键发现</strong>
+        <p>第一版提示词生成结果还算接近，但远达不到上线标准——缺少标签枚举约束和分类标准，导致输出发散不可控，如只是美味儿童爱吃就打标到儿童但可能会忽视食用安全性。
+          <br />Prompt是任务的说明书，你需要明确告诉模型:目标是什么、有哪些限制、希望它怎么做。就像写一份好需求,不要让模型"猜"你要什么。 <br />
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 4: 方案概述 -->
+    <section id="sec-solution">
+      <h2>四、方案概述</h2>
+      <h3>标签体系设计</h3>
+      <pre>{
+  <span class="json-key">"菜品类型"</span>: [<span class="json-str">"家常快手菜"</span>],
+  <span class="json-key">"口味风格"</span>: [<span class="json-str">"酸甜"</span>],
+  <span class="json-key">"烹饪方式"</span>: [<span class="json-str">"炒"</span>],
+  <span class="json-key">"场景"</span>: [<span class="json-str">"正餐"</span>, <span class="json-str">"快手餐"</span>],
+  <span class="json-key">"适合人群"</span>: [<span class="json-str">"儿童"</span>, <span class="json-str">"老人"</span>],
+  <span class="json-key">"耗时"</span>: [<span class="json-str">"10-20分钟"</span>],
+  <span class="json-key">"难度"</span>: <span class="json-str">"容易做"</span>,
+  <span class="json-key">"核心食材"</span>: [<span class="json-str">"鸡胸肉"</span>, <span class="json-str">"鸡蛋"</span>],
+  <span class="json-key">"reason"</span>: { ... },
+  <span class="json-key">"recommend"</span>: { ... }
+}</pre>
+      <p>针对输出结果进行收敛，通过不断打磨再结合社区现有分类标准，根据llm上打印出reason和recommend标签不断完善标签枚举
+        再通过跟业务沟通最后设计了 7 大维度、60+ 标签的结构化体系：</p>
+
+      <table class="mapping-table">
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>标签列表</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>菜品类型</td>
+            <td>家常快手菜、镇桌硬菜、滋养汤羹、凉拌开胃、慢火焖烧、烧烤炸物、甜品饮品、主食面点、干锅火锅、健身轻食</td>
+          </tr>
+          <tr>
+            <td>口味风格</td>
+            <td>辣、咖喱、糖醋、清淡、孜然、鱼香、蒜香、奶香、五香、酸甜、甜、咸香、黑椒</td>
+          </tr>
+          <tr>
+            <td>烹饪方式</td>
+            <td>蒸、红烧、火锅、煎、炖、干锅、卤、炸、烤、炒、煮、焖、拌</td>
+          </tr>
+          <tr>
+            <td>场景</td>
+            <td>早餐、正餐、快手餐、夜宵、下午茶、聚会节日、轻食、时令菜</td>
+          </tr>
+          <tr>
+            <td>适合人群</td>
+            <td>儿童、老人、孕期、健身人群、素食者、重口味爱好者</td>
+          </tr>
+          <tr>
+            <td>难度</td>
+            <td>零厨艺、容易做、有挑战</td>
+          </tr>
+          <tr>
+            <td>耗时</td>
+            <td>10分钟内、10-20分钟、20-30分钟、30-60分钟、1小时以上</td>
+          </tr>
+        </tbody>
+      </table>
+
+
+      <p>完整的 workflow：<a href="https://pugpt.pupuvip.com/app/74a74aae-5836-4fea-961c-390b11dc2f95/workflow"
+          target="_blank">📄 AI 菜谱打标工作流</a></p>
+      <p>整个核心思路是<strong>常量提取 + 提示词约束 + 大模型识别 + 后置程序校验 + few-shot 兜底</strong>：</p>
+      <ul>
+        <li><strong>通过提示词约束标签范围、判断逻辑和输出格式</strong> — 限定枚举列表，确保输出可控</li>
+        <li><strong>基于大模型进行标签识别</strong> — 利用模型的语言理解能力，从菜谱内容中提取标签</li>
+        <li><strong>对模型难以稳定命中的场景，补充 few-shot 示例和规则兜底</strong> — 高频误判 case 压测，保证结果稳定</li>
+        <li><strong>结合后置程序进行枚举值校验与映射修正</strong> — 模型输出的别名、近义词统一映射到标准枚举</li>
+      </ul>
+    </section>
+
+    <!-- Section 5: 核心问题与解决方案 -->
+    <section id="sec-problems">
+      <h2>五、核心问题与解决方案汇总</h2>
+      <p>在实际开发过程中，遇到了三个核心问题。这些问题的解决思路对后续类似项目有一些参考价值。</p>
+
+      <!-- Problem 1 -->
+      <div class="problem-card">
+        <div class="problem-title">🔴 问题一：标签发散不可控</div>
+        <p>没有制定分类标准和标签内容约束，大模型思维过于发散，同一份输入会产生 N 种不同结果。</p>
+
+        <div class="solution-title">🟢 解决方案</div>
+        <ul>
+          <li>限定标签枚举列表，模型只能在枚举范围内选择</li>
+          <li>把枚举放到通用的 Python 节点中声明，避免每个节点重复定义</li>
+          <!--
+          第53min
+          我这边做的是一个选择器不需要返回丰富多样的文本，所以把温度调低。
+          top_p.ai在生成每个字的时候都在不停计算他下一个字的可能性是什么。
+          Dify中温度、top k、top p参数到底有什么区别？
+A：温度控制整体随机性：高温更创意，低温更严谨；top k限制候选词数量：k=1稳定但重复，k大则多样；top p按累积概率选词：设为0.9表示从前90%概率词中选，平衡质量与多样性；建议先固定top k=3、top p=0.8，再微调温度。
+Q：为什么我用Dify创建的聊天机器人回答内容重复或没逻辑？
+A：大概率是参数设置不当：温度过低（<0.3）导致死板，过高（>1）导致混乱；top k=1导致重复输出；top p<0.7导致选择范围太小；建议调整至温度0.5-0.8、top k=3-5、top p=0.8以上，并重新发布验证。
+
+          我当时把温度和 top_p 都设得比较低，本质上是为了“收住模型”。
+因为菜谱打标不是创作任务，而是一个严格枚举的分类任务，越发散越容易飘标签、造新词、出非法值，所以需要它尽量稳定。
+          temperature 设低，是为了降低随机性，让模型在打标任务上更稳定、更少漂移。
+          top_p 设低，是为了收窄采样范围，让模型尽量只在高概率候选里选，减少造词和非法输出。
+-->
+
+          <li>调低 <code>temperature</code> 和 <code>top_p</code>，大幅降低生成随机性</li>
+          <li>先生成 100 条数据给运营，让他们补充标签描述、收敛枚举范围 <a href="https://pupumall.feishu.cn/docx/Cks6dObV4oXai4xwME8czH8unxk"
+              target="_blank">📄 菜谱分类标签</a></li>
+          <li>挑选有价值的标签，对有明确要求的标签内容进行描述，要求每个描述尽量简短准确</li>
+        </ul>
+
+      </div>
+
+      <!-- Problem 2 -->
+      <div class="problem-card">
+        <div class="problem-title">🔴 问题二：模型漏执行规则</div>
+        <p>明明写了「无肉无海鲜必须返回素食者」，模型还是会漏掉。规则写了不代表模型会稳定执行。</p>
+
+        <div class="solution-title">🟢 解决方案</div>
+        <ul>
+          <li>除了定义规则外，明确要求「必须逐项执行判断逻辑，即使已命中其他标签」</li>
+          <li>添加输出前检查环节</li>
+          <li>给高频误判 case 加 few-shot，内部给出判断原因（正向原因 + 反向示例）</li>
+          <li>必要时增加后处理映射兜底</li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <strong>关于 few-shot</strong>
+          <p>few-shot 不用多，3 到 5 条高质量样本就够。示例要覆盖高频误判场景，而不是平均铺开。后续可以用高频误判的 case 反复压测保证结果稳定。few-shot 有时比继续堆规则更有效。</p>
+          <br />
+          <!-- Anthropic建议从真实失败案例中积累20-50条Eval，而非追求大而全的覆盖率。20条来自真实翻车的Eval，每条都对应Agent真实问题场景，远胜凭空构造的200条用例。 -->
+          <img src="./images/1y7FZ548dNLq4iidZf1FJHSI.png" class="zoomable" style="width: 100%;" />
+        </div>
+      </div>
+
+      <!-- Problem 3 -->
+      <div class="problem-card">
+        <div class="problem-title">🔴 问题三：模型输出非法值</div>
+        <p>比如烹饪方式里，模型总是输出「烧」，而枚举里要求的是「红烧」。提示词里明明写了映射，模型还是会输出非法值。</p>
+
+        <div class="solution-title">🟢 解决方案</div>
+        <p>不要把所有事情都交给提示词，在后置节点做一层稳定的过滤和映射：</p>
+
+        <table class="mapping-table">
+          <thead>
+            <tr>
+              <th>模型输出</th>
+              <th></th>
+              <th>映射结果</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>烧 / 烧制</td>
+              <td class="arrow-cell">→</td>
+              <td>红烧</td>
+            </tr>
+            <tr>
+              <td>煲 / 煲汤</td>
+              <td class="arrow-cell">→</td>
+              <td>炖</td>
+            </tr>
+            <tr>
+              <td>焗 / 焖烧</td>
+              <td class="arrow-cell">→</td>
+              <td>焖</td>
+            </tr>
+            <tr>
+              <td>口味别名</td>
+              <td class="arrow-cell">→</td>
+              <td>统一映射到标准枚举</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section 6: 工程化实践 -->
+    <section id="sec-engineering">
+      <h2>六、工程化实践</h2>
+
+      <h3>输出可追溯性</h3>
+      <p>每次生成结果时，追加 <code>reason</code> 和 <code>recommend</code> 字段，方便追溯标签生成的原因，并给出枚举池补充建议：识别潜在新标签，辅助运营完善标签池</p>
+
+      <h3>工作流节点设计</h3>
+      <ul>
+        <li>通过<strong>条件分支</strong>判断是否有 <code>reason</code> 字段，有才追加 <code>recommend</code></li>
+        <li>将追加了 <code>recommend</code> 的分支和未追加的分支统一放到<strong>变量聚合器</strong>中输出，避免创建重复的结束节点</li>
+      </ul>
+
+      <h3>提示词调试技巧</h3>
+      <p>建了一个同模型的 Dify 问答助手机器人 <a href="https://pugpt.pupuvip.com/app/6d6cb694-8309-4628-a32d-8e6c6f76b76c/workflow"
+          target="_blank">📄 问答助手机器人</a>，专门用来调试提示词。</p>
+
+      <div class="callout callout-warning">
+        <strong>注意</strong>
+        <!-- 这里不展开讲了 -->
+        记得把记忆窗口开起来，否则工作流只能进行一回合对话，无法基于上下文迭代调试。dify里面还有很多好玩的功能，感兴趣可以翻下官方文档，或者看下之前<a
+          href="https://pupumall.feishu.cn/minutes/obcn3xkqu2i54ye9k1g8qevo" target="_blank">鸿杰的分享视频</a>
+      </div>
+    </section>
+
+    <!-- Section 7: 批量执行方案 -->
+    <section id="sec-batch">
+      <h2>七、批量执行方案</h2>
+
+      <div class="option-cards">
+        <div class="option-card">
+          <span class="badge">方案 A</span>
+          <h4>飞书多维表格</h4>
+          <ul>
+            <li>通过字段捷径调用 Dify 接口</li>
+            <li>JSON 提取器拆分返回字段</li>
+            <li>多维度视图方便运营浏览空标签，批量更新失败数据</li>
+            <li>对输入和输出进行编组，方便浏览</li>
+          </ul>
+          <p style="margin-top:12px;font-size:14px;color:var(--text-secondary);">⚠️ 缺点：有限流，生成速度较慢，不适合大批量</p>
+        </div>
+        <div class="option-card recommended">
+          <span class="badge">推荐 · 方案 B</span>
+          <h4>自写 Python 批量调用程序</h4>
+          <ul>
+            <li>线程池并发，最多 10 个并发请求</li>
+            <li>单行失败自动重试（指数退避 / 固定间隔）</li>
+            <li>重试 2-3 次仍失败 → 维护失败行清单（如 <code>main_failed_rows.json</code>）</li>
+            <li>支持「只重跑失败行 / 指定行号」，避免全量重跑</li>
+            <li>全部请求完成一次性io落表</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>分批处理与人工门控</h3>
+      <p>100 条数据可以一次跑完，但 4000 条一次性跑完如果结果不满意，重复跑很容易让服务爆掉。</p>
+
+      <ul>
+        <li><strong>按批次执行</strong>：每批 200~500 条，每批结果落盘保存</li>
+        <li><strong>日志与可观测性</strong>：打印「行号 + 主键/菜名 + 关键结果 + 耗时 + 重试次数」，便于复盘，发现问题随时终止</li>
+        <li><strong>抽样复核</strong>：每批抽样 5%~10% 人工复核，决定是否继续下一批，减少错误扩散，记录通过率与常见误差，反向优化提示词和规则</li>
+      </ul>
+    </section>
+
+    <!-- Section 8: 调试与验证 -->
+    <section id="sec-debug">
+      <h2>八、调试与验证</h2>
+      <p>不要直接拿一版提示词上全量，分三步走：</p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-title">小样本调试</div>
+          <div class="step-desc">100 条高频样本<br>调规则、调 few-shot<br>调后处理映射</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-title">批量验证</div>
+          <div class="step-desc">4000 条全量数据<br>检查非空率<br>分析主要错判类型</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-title">回流纠偏</div>
+          <div class="step-desc">剩余错例放回飞书<br>重试、复盘<br>沉淀规则</div>
+        </div>
+      </div>
+
+      <h3>各轮结果</h3>
+      <ul>
+        <li><strong>第一轮（100 条）</strong>：字段命中率 100%，经运营验证整体高可用</li>
+        <li><strong>第二轮（4000 条）</strong>：非空率 99%，仅约 10 条因输入参数为空未命中</li>
+        <li><strong>第三轮（纠偏）</strong>：结合飞书多维表格重试，基本全量命中，仅剩 3 条需人工纠偏</li>
+      </ul>
+      <h3>知道何时停手</h3>
+      <p>最后 4000 条数据里只有个别问题时，<strong>不要硬调提示词</strong>。已经是高准确率的情况下，再去塞提示词或堆约束反而会降低模型整体生成效果。剩下的事交给运营在飞书中去重跑或手动判断。</p>
+    </section>
+
+    <!-- Section 9: 项目成果 -->
+    <section id="sec-result">
+      <h2>九、测评</h2>
+      <h3>两种评测方式对比</h3>
+      <div class="option-cards">
+        <div class="option-card">
+          <span class="badge">方式 A</span>
+          <h4>飞书多维表格插件评测</h4>
+          <ul>
+            <li>准备成本偏高，需要自己准备好多维表格要测试的数据</li>
+            <li>必须新增两列去输出评测结果，但这类结果运营通常并不关心，不应该为了评测去污染你的输出表格</li>
+            <li>整体链路也相对慢一些，频繁迭代时会拖节奏</li>
+            <li>不再维护了</li>
+            <li><a href="https://pupumall.feishu.cn/wiki/ExgPwSnePiHB5pkPu9ecTX4bn76" target="_blank">飞书Dify工作流评测工具</a>
+            </li>
+          </ul>
+        </div>
+        <div class="option-card recommended">
+          <span class="badge">推荐 · 方式 B</span>
+          <h4>公司自部署玄思平台评测</h4>
+          <ul>
+            <li>支持自定义数据集与评估器，并支持导入 Dify 调用日志快速建集</li>
+            <li>支持同一数据集多次评测结果对比，可以清晰看到每次迭代带来的效果变化，用数据驱动优化决策</li>
+            <li>可以建立周期性抽检机制，持续监控标签准确率</li>
+            <li>完全独立运行，不污染业务运行与输出表格</li>
+            <li>专人维护</li>
+            <li><a
+                href="https://xuansi.pupuvip.tech/space/9ef9c9bb-16ef-41bf-aafa-27d548c3e962/experiments/148f708c-d1b9-4719-8ba8-c73986f54b60/evaluation"
+                target="_blank">玄思评测结果</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout callout-warning">
+        <strong>评测分值怎么用</strong>
+        <p>
+          评测数据准备50-100条即可，评测结果可能模型本身就存在误判，玄思测评目前用的qwen3.5本身就比较弱智，仅供参考，不全量4000条了，只建议作为参考提供个人工打标的方向，小范本平均能稳定到80+就够了。最终采纳标准还是以人工审核打标为准。
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 10: 总结 -->
+    <section id="sec-summary">
+      <h2>十、总结</h2>
+      <p>这个项目最大的体会是：AI 应用开发的核心不是写代码，而是不断跟模型「对齐」。限定枚举比堆规则有效，程序兜底比硬压提示词靠谱，分阶段验证比一步到位现实。追求 100% 准确率的边际成本极高，学会在合适的时机交给人工。
+        <!-- 这个需求比较适合新手入门，大家可以自己尝试写一个，后面的需求甚至连数据也要自己准备了可能也要学习一些服务端知识，比如写sql导出数据 -->
+      </p>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>📄 <a href="https://pupumall.feishu.cn/base/G3mfbaEJUa06GGsrx0OcF24Lncd?table=tblYTtDwSa2Aul6o&view=vewB0b6Xlp"
+          target="_blank">查看完整表格</a></p>
+      <p style="margin-top:8px;">Dify 工作流实战分享 · 菜谱 AI 打标全流程复盘 · 2026</p>
+    </div>
+
+  </div><!-- end main -->
+
+  <button class="back-top" onclick="window.scrollTo({top:0})">↑</button>
+
+  <script>
+    // Scroll spy for sidebar
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.sidebar nav a');
+
+    function updateActiveLink() {
+      let current = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 100;
+        if (window.scrollY >= top) {
+          current = section.getAttribute('id');
+        }
+      });
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    // Back to top visibility
+    const backTop = document.querySelector('.back-top');
+    function updateBackTop() {
+      backTop.classList.toggle('visible', window.scrollY > 400);
+    }
+
+    window.addEventListener('scroll', () => {
+      updateActiveLink();
+      updateBackTop();
+    });
+
+    // Close sidebar on mobile when clicking a link
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
+      });
+    });
+
+    // Close sidebar on mobile when clicking outside
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const hamburger = document.querySelector('.hamburger');
+      if (window.innerWidth <= 900 && sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    });
+
+    updateActiveLink();
+
+    // Image lightbox with zoom & navigation
+    (function () {
+      const images = Array.from(document.querySelectorAll('img.zoomable'));
+      if (!images.length) return;
+
+      let currentIndex = 0;
+      let scale = 1;
+      let translateX = 0, translateY = 0;
+      let isDragging = false, startX, startY, lastTx, lastTy;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'lightbox-overlay';
+      overlay.innerHTML = `
+        <div class="lightbox-toolbar">
+          <button class="lb-zoom-in" title="放大">+</button>
+          <button class="lb-zoom-out" title="缩小">−</button>
+          <button class="lb-reset" title="重置">⟲</button>
+          <button class="lb-close" title="关闭">✕</button>
+        </div>
+        <button class="lightbox-nav prev" title="上一张">‹</button>
+        <button class="lightbox-nav next" title="下一张">›</button>
+        <img />
+        <div class="lightbox-counter"></div>
+      `;
+      document.body.appendChild(overlay);
+
+      const lbImg = overlay.querySelector('img');
+      const counter = overlay.querySelector('.lightbox-counter');
+      const prevBtn = overlay.querySelector('.lightbox-nav.prev');
+      const nextBtn = overlay.querySelector('.lightbox-nav.next');
+
+      function resetTransform() {
+        scale = 1; translateX = 0; translateY = 0;
+        applyTransform();
+      }
+
+      function applyTransform() {
+        lbImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      }
+
+      function showImage(index) {
+        currentIndex = (index + images.length) % images.length;
+        lbImg.src = images[currentIndex].src;
+        counter.textContent = `${currentIndex + 1} / ${images.length}`;
+        resetTransform();
+      }
+
+      function open(index) {
+        showImage(index);
+        overlay.classList.add('active');
+      }
+
+      function close() {
+        overlay.classList.remove('active');
+        resetTransform();
+      }
+
+      function zoom(delta) {
+        scale = Math.min(Math.max(0.5, scale + delta), 5);
+        applyTransform();
+      }
+
+      images.forEach((img, i) => {
+        img.addEventListener('click', () => open(i));
+      });
+
+      overlay.querySelector('.lb-zoom-in').addEventListener('click', e => { e.stopPropagation(); zoom(0.3); });
+      overlay.querySelector('.lb-zoom-out').addEventListener('click', e => { e.stopPropagation(); zoom(-0.3); });
+      overlay.querySelector('.lb-reset').addEventListener('click', e => { e.stopPropagation(); resetTransform(); });
+      overlay.querySelector('.lb-close').addEventListener('click', e => { e.stopPropagation(); close(); });
+      prevBtn.addEventListener('click', e => { e.stopPropagation(); showImage(currentIndex - 1); });
+      nextBtn.addEventListener('click', e => { e.stopPropagation(); showImage(currentIndex + 1); });
+
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+      // Mouse wheel zoom
+      overlay.addEventListener('wheel', e => {
+        e.preventDefault();
+        zoom(e.deltaY < 0 ? 0.2 : -0.2);
+      }, { passive: false });
+
+      // Drag to pan
+      lbImg.addEventListener('mousedown', e => {
+        if (scale <= 1) return;
+        isDragging = true;
+        startX = e.clientX; startY = e.clientY;
+        lastTx = translateX; lastTy = translateY;
+        e.preventDefault();
+      });
+
+      window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        translateX = lastTx + (e.clientX - startX);
+        translateY = lastTy + (e.clientY - startY);
+        applyTransform();
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      // Keyboard
+      document.addEventListener('keydown', e => {
+        if (!overlay.classList.contains('active')) return;
+        switch (e.key) {
+          case 'Escape': close(); break;
+          case 'ArrowLeft': showImage(currentIndex - 1); break;
+          case 'ArrowRight': showImage(currentIndex + 1); break;
+          case '+': case '=': zoom(0.3); break;
+          case '-': zoom(-0.3); break;
+          case '0': resetTransform(); break;
+        }
+      });
+    })();
+  </script>
+
+</body>
+
+</html>
